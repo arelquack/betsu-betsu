@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "betsu_betsu",
+    "fee_vault",
+]
+resolver = "2"

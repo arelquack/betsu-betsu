@@ -115,6 +115,7 @@ export async function splitBillTransaction(
     const invokeOp = contract.call("record_split",
       nativeToScVal(payerPublicKey, { type: "address" }),
       nativeToScVal(hostPublicKey, { type: "address" }),
+      nativeToScVal(CONTRACT_ADDRESS, { type: "address" }), // Using CONTRACT_ADDRESS as mock fee_vault for now
       nativeToScVal(amountVal, { type: "i128" })
     );
 
@@ -170,7 +171,7 @@ export async function getTotalVolume(): Promise<number> {
         }
         return 0;
     } catch(e) {
-        console.error("Failed to fetch total volume", e);
+        console.warn("Failed to fetch total volume (likely ISP block)", e);
         return 0;
     }
 }

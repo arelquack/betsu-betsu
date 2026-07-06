@@ -1,54 +1,91 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getTotalVolume } from '@/utils/stellar';
+import { getTotalVolume, rpcServer, CONTRACT_ADDRESS } from '@/utils/stellar';
 import { Activity, TrendingUp } from 'lucide-react';
 
 export default function ActivityFeed() {
-  const [totalVolume, setTotalVolume] = useState<number | null>(null);
+  const [volume, setVolume] = useState<number>(0);
+  const [events, setEvents] = useState<any[]>([]);
+  const [networkError, setNetworkError] = useState<boolean>(false);
 
   useEffect(() => {
-    let mounted = true;
-    
-    const fetchVolume = async () => {
-      const volume = await getTotalVolume();
-      if (mounted) {
-        setTotalVolume(volume);
+    const fetchVolumeAndEvents = async () => {
+      try {
+        const vol = await getTotalVolume();
+        setVolume(vol);
+
+        const server = rpcServer;
+        const latestLedger = await server.getLatestLedger();
+        const startLedger = Math.max(1, latestLedger.sequence - 1000);
+        
+        const eventsResponse = await server.getEvents({
+          startLedger,
+          filters: [
+            {
+              type: "contract",
+              contractIds: [CONTRACT_ADDRESS],
+              topics: [["*", "*", "*"]]
+            }
+          ],
+          limit: 10
+        });
+        
+        setEvents(eventsResponse.events || []);
+        setNetworkError(false);
+      } catch(e) {
+        console.warn("Failed to fetch data (likely ISP block):", e);
+        setNetworkError(true);
       }
     };
 
-    fetchVolume();
-    const interval = setInterval(fetchVolume, 5000); // poll every 5s
-
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
+    fetchVolumeAndEvents();
+    const interval = setInterval(fetchVolumeAndEvents, 10000); // poll every 10s
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-6 mb-8 mt-4 flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl shadow-inner">
-          <Activity size={24} className="animate-pulse" />
+    <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xl">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-blue-500/20 rounded-xl">
+            <Activity className="w-5 h-5 text-blue-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Live Activity</h2>
         </div>
-        <div>
-          <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            Live Network Stats
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Total split volume recorded on smart contract
-          </p>
-        </div>
+        {networkError && (
+          <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded border border-red-500/30">
+            ISP Block Detected (Use VPN)
+          </span>
+        )}
       </div>
-      
-      <div className="text-right flex flex-col items-end">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md mb-1">
-          <TrendingUp size={12} /> Syncing
+
+      <div className="space-y-4">
+        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-gray-400 text-sm">Total Platform Volume</span>
+            <TrendingUp className="w-4 h-4 text-green-400" />
+          </div>
+          <div className="text-2xl font-bold text-white">
+            {volume !== null ? `${volume} XLM` : 'Loading...'}
+          </div>
         </div>
-        <p className="font-mono text-2xl font-black text-slate-900 dark:text-white">
-          {totalVolume !== null ? totalVolume.toFixed(2) : '---'} <span className="text-sm text-slate-500">XLM</span>
-        </p>
+
+        {events.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-gray-400 mb-3">Recent Splits</h3>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {events.map((evt, idx) => (
+                <div key={idx} className="p-3 bg-white/5 rounded-xl border border-white/5 text-sm">
+                  <span className="text-blue-400 font-medium">Split Recorded!</span>
+                  <div className="text-gray-400 text-xs mt-1">
+                    Ledger: {evt.ledger}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

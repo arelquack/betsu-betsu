@@ -8,7 +8,7 @@ pub struct SplitTracker;
 impl SplitTracker {
     /// Records a split bill payment and emits an event.
     /// Also tracks the total volume of splits.
-    pub fn record_split(env: Env, payer: Address, host: Address, amount: i128) {
+    pub fn record_split(env: Env, payer: Address, host: Address, fee_vault_address: Address, amount: i128) {
         payer.require_auth();
 
         // Increment the total split volume
@@ -16,6 +16,17 @@ impl SplitTracker {
         let mut total: i128 = env.storage().instance().get(&key).unwrap_or(0);
         total += amount;
         env.storage().instance().set(&key, &total);
+
+        // Calculate 1% fee
+        let fee = amount / 100;
+        
+        // Inter-contract communication: call deposit_fee on fee_vault
+        use soroban_sdk::{vec, IntoVal};
+        env.invoke_contract::<()>(
+            &fee_vault_address,
+            &Symbol::new(&env, "deposit_fee"),
+            vec![&env, fee.into_val(&env)],
+        );
 
         // Emit an event for the frontend to listen to
         env.events().publish((symbol_short!("split"), payer, host), amount);
@@ -27,3 +38,6 @@ impl SplitTracker {
         env.storage().instance().get(&key).unwrap_or(0)
     }
 }
+
+#[cfg(test)]
+mod test;
