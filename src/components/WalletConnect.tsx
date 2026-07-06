@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { connectWallet, fetchBalance } from '@/utils/stellar';
 import { Wallet, LogOut, Download, AlertCircle } from 'lucide-react';
-import { FREIGHTER_ID, ALBEDO_ID } from '@creit.tech/stellar-wallets-kit';
 
 interface WalletConnectProps {
   onConnect: (publicKey: string) => void;
@@ -13,14 +12,18 @@ interface WalletConnectProps {
 export default function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps) {
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleConnect = async (walletId: string) => {
-    setIsLoading(walletId);
+  const handleConnect = async () => {
+    setIsLoading(true);
     setError(null);
     try {
-      const pubKey = await connectWallet(walletId);
+      const pubKey = await connectWallet();
+      if (!pubKey) {
+        setIsLoading(false);
+        return;
+      }
       setPublicKey(pubKey);
       onConnect(pubKey);
       const bal = await fetchBalance(pubKey);
@@ -29,7 +32,7 @@ export default function WalletConnect({ onConnect, onDisconnect }: WalletConnect
       console.error('Failed to connect:', err);
       setError(err.message || "Failed to connect wallet.");
     } finally {
-      setIsLoading(null);
+      setIsLoading(false);
     }
   };
 
@@ -83,23 +86,14 @@ export default function WalletConnect({ onConnect, onDisconnect }: WalletConnect
           <span className="font-medium">{error}</span>
         </div>
       )}
-      <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
+      <div className="flex justify-center w-full">
         <button
-          onClick={() => handleConnect(FREIGHTER_ID)}
-          disabled={isLoading !== null}
+          onClick={handleConnect}
+          disabled={isLoading}
           className="w-full sm:w-auto group relative flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/40 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
         >
           <Wallet className="transition-transform group-hover:scale-110" size={24} />
-          {isLoading === FREIGHTER_ID ? 'Connecting...' : 'Connect Freighter'}
-        </button>
-        
-        <button
-          onClick={() => handleConnect(ALBEDO_ID)}
-          disabled={isLoading !== null}
-          className="w-full sm:w-auto group relative flex items-center justify-center gap-3 px-8 py-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white rounded-2xl font-bold text-lg transition-all shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-        >
-          <Wallet className="transition-transform group-hover:scale-110" size={24} />
-          {isLoading === ALBEDO_ID ? 'Connecting...' : 'Connect Albedo'}
+          {isLoading ? 'Connecting...' : 'Connect Wallet'}
         </button>
       </div>
     </div>

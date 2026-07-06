@@ -5,12 +5,11 @@ import {
 import { FreighterModule } from '@creit.tech/stellar-wallets-kit/modules/freighter';
 import { AlbedoModule } from '@creit.tech/stellar-wallets-kit/modules/albedo';
 
-const FREIGHTER_ID = 'freighter';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { Contract, nativeToScVal, scValToNative, rpc } from '@stellar/stellar-sdk';
 
 const HORIZON_URL = 'https://horizon-testnet.stellar.org';
-const RPC_URL = 'https://soroban-testnet.stellar.org';
+const RPC_URL = 'https://soroban-testnet.stellar.org/';
 const NETWORK_PASSPHRASE = StellarSdk.Networks.TESTNET;
 
 export const server = new StellarSdk.Horizon.Server(HORIZON_URL);
@@ -19,29 +18,34 @@ export const rpcServer = new rpc.Server(RPC_URL);
 export const PLATFORM_FEE_ADDRESS = 'GCL5GAEEOXL36MREN3QIIATAT732QPFOKHRKN7U56KOTPQIFXIDY3NYY';
 export const CONTRACT_ADDRESS = 'CC47KRT7GVWUKUUHWENOV4USRXKIVHDLWRJM5FYAI4F5QFO7SRM5BF42';
 
+import { xBullModule } from '@creit.tech/stellar-wallets-kit/modules/xbull';
+import { LobstrModule } from '@creit.tech/stellar-wallets-kit/modules/lobstr';
+
 let isKitInitialized = false;
 export function initKit() {
     if (!isKitInitialized) {
         StellarWalletsKit.init({
             network: Networks.TESTNET,
-            selectedWalletId: FREIGHTER_ID,
+            selectedWalletId: 'freighter',
             modules: [
                 new FreighterModule(),
                 new AlbedoModule(),
+                new xBullModule(),
+                new LobstrModule(),
             ],
         });
         isKitInitialized = true;
     }
 }
 
-export async function connectWallet(walletId: string = FREIGHTER_ID): Promise<string> {
+export async function connectWallet(): Promise<string | null> {
     initKit();
-    StellarWalletsKit.setWallet(walletId);
     try {
-        const result = await StellarWalletsKit.getAddress();
+        const result = await StellarWalletsKit.authModal();
         return result.address;
     } catch (e) {
-        throw new Error("Wallet connection rejected or not found.");
+        console.warn("Wallet connection cancelled or failed:", e);
+        return null;
     }
 }
 
@@ -68,15 +72,8 @@ export async function splitBillTransaction(
     const hostAmount = (totalXlm * 0.99).toFixed(7);
     const feeAmount = (totalXlm * 0.01).toFixed(7);
 
-    const contract = new Contract(CONTRACT_ADDRESS);
-    const amountVal = Math.floor(totalXlm * 10000000);
-    const invokeOp = contract.call("record_split",
-      nativeToScVal(payerPublicKey, { type: "address" }),
-      nativeToScVal(hostPublicKey, { type: "address" }),
-      nativeToScVal(amountVal, { type: "i128" })
-    );
-
-    const transaction = new StellarSdk.TransactionBuilder(payerAccount, {
+    // --- TRANSACTION 1: XLM Payments ---
+    const paymentTx = new StellarSdk.TransactionBuilder(payerAccount, {
       fee: '100000',
       networkPassphrase: NETWORK_PASSPHRASE,
     })
@@ -90,30 +87,65 @@ export async function splitBillTransaction(
         asset: StellarSdk.Asset.native(),
         amount: feeAmount,
       }))
+      .setTimeout(60)
+      .build();
+
+    let signedPaymentXdr: string;
+    try {
+        const result = await StellarWalletsKit.signTransaction(paymentTx.toXDR(), { 
+            networkPassphrase: NETWORK_PASSPHRASE,
+            address: payerPublicKey 
+        });
+        signedPaymentXdr = result.signedTxXdr || result as unknown as string;
+    } catch (err) {
+        throw new Error("Payment transaction rejected by user");
+    }
+    
+    const txToSubmit1 = StellarSdk.TransactionBuilder.fromXDR(signedPaymentXdr, NETWORK_PASSPHRASE);
+    const response1 = await server.submitTransaction(txToSubmit1);
+    if (!response1.successful) {
+        throw new Error("Payment transaction failed to submit");
+    }
+
+    // --- TRANSACTION 2: Record Split in Soroban ---
+    // Note: We need to reload the account because the sequence number has incremented!
+    const updatedAccount = await server.loadAccount(payerPublicKey);
+    const contract = new Contract(CONTRACT_ADDRESS);
+    const amountVal = Math.floor(totalXlm * 10000000);
+    const invokeOp = contract.call("record_split",
+      nativeToScVal(payerPublicKey, { type: "address" }),
+      nativeToScVal(hostPublicKey, { type: "address" }),
+      nativeToScVal(amountVal, { type: "i128" })
+    );
+
+    const invokeTx = new StellarSdk.TransactionBuilder(updatedAccount, {
+      fee: '100000',
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
       .addOperation(invokeOp)
       .setTimeout(60)
       .build();
 
-    const preparedTx = await rpcServer.prepareTransaction(transaction);
+    const preparedInvokeTx = await rpcServer.prepareTransaction(invokeTx);
     
-    let signedXdr: string;
+    let signedInvokeXdr: string;
     try {
-        const result = await StellarWalletsKit.signTransaction(preparedTx.toXDR(), { 
+        const result2 = await StellarWalletsKit.signTransaction(preparedInvokeTx.toXDR(), { 
             networkPassphrase: NETWORK_PASSPHRASE,
             address: payerPublicKey 
         });
-        signedXdr = result.signedTxXdr || result as unknown as string;
+        signedInvokeXdr = result2.signedTxXdr || result2 as unknown as string;
     } catch (err) {
-        throw new Error("Transaction rejected by user");
+        throw new Error("Smart contract transaction rejected by user");
     }
     
-    const transactionToSubmit = StellarSdk.TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE);
-    const response = await rpcServer.sendTransaction(transactionToSubmit);
+    const txToSubmit2 = StellarSdk.TransactionBuilder.fromXDR(signedInvokeXdr, NETWORK_PASSPHRASE);
+    const response2 = await rpcServer.sendTransaction(txToSubmit2);
     
-    if (response.status === 'ERROR') {
-        throw new Error("Transaction failed to submit");
+    if (response2.status === 'ERROR') {
+        throw new Error("Smart contract transaction failed to submit");
     }
-    return response.hash;
+    return response2.hash;
   } catch (error) {
     console.error('Error during transaction:', error);
     throw error;
