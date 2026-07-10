@@ -73,13 +73,13 @@ This project was upgraded to complete the **Level 3 - Orange Belt** challenge, i
 
 ### 📸 Screenshots
 #### Mobile Responsive UI
-> *(Insert screenshot showing the UI beautifully wrapped on a mobile screen)*
+![Mobile Responsive UI](public/mobile-responsive.jpg)
 
 #### CI/CD Pipeline Running
-> *(Insert screenshot of GitHub Actions green checkmarks)*
+![CI/CD Pipeline Running](public/ci-cd.jpg)
 
 #### Test Output (3+ Passing Tests)
-> *(Insert screenshot of `cargo test` and `npm run test` passing successfully)*
+![Test Output](public/testing.jpg)
 
 ### 🎥 Demo Video
 - **Video Link**: [Insert YouTube/Loom Link Here (1-2 minutes)]
