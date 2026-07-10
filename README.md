@@ -64,7 +64,7 @@ This project was upgraded to complete the **Level 3 - Orange Belt** challenge, i
 ## Proof of Submission
 
 ### 🌐 Live Demo
-- **Demo URL**: [Insert Vercel/Netlify Link Here]
+- **Demo URL**: ![Demo Link](https://betsu-betsu-kappa.vercel.app/)
 
 ### 📜 Smart Contracts
 - **Primary Contract (SplitTracker) Address**: `CC47KRT7GVWUKUUHWENOV4USRXKIVHDLWRJM5FYAI4F5QFO7SRM5BF42`
@@ -85,4 +85,4 @@ This project was upgraded to complete the **Level 3 - Orange Belt** challenge, i
 - **Video Link**: [Insert YouTube/Loom Link Here (1-2 minutes)]
 
 ---
-Built with 🩵 for the Stellar Ecosystem.
+Built with Love for the Stellar Ecosystem.
