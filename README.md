@@ -56,17 +56,33 @@ This project was upgraded to complete the **Level 3 - Orange Belt** challenge, i
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Testing the Application
-- Ensure you have a Stellar Wallet (Freighter, Albedo, xBull).
-- Switch your Wallet Network to **Testnet** and fund it via friendbot.
-- Connect your wallet.
-- *Note: If you see "ISP Block Detected", turn on a VPN (like 1.1.1.1) as some Indonesian ISPs block the Soroban Testnet RPC.*
-- Observe the **Live Activity** feed streaming recent split events from the ledger.
-- Enter a Total Bill, Number of People, and a Host Wallet Address.
-- Click "Pay Share Now" and approve the transaction.
-- After success, the Live Activity feed will update in real-time!
+- Connect your Stellar Wallet (Freighter, Albedo, etc.) on the **Testnet**.
+- *Note: If you see "ISP Block Detected", turn on a VPN (like 1.1.1.1).*
+- Observe the **Live Activity** feed streaming real-time events.
+- Click "Pay Share Now" to execute the multi-operation transaction (Payment + InvokeHostFunction).
 
 ## Proof of Submission
-> *(Replace this with a link to your Vercel deployment, GitHub repository, and Demo Video)*
+
+### 🌐 Live Demo
+- **Demo URL**: [Insert Vercel/Netlify Link Here]
+
+### 📜 Smart Contracts
+- **Primary Contract (SplitTracker) Address**: `CC47KRT7GVWUKUUHWENOV4USRXKIVHDLWRJM5FYAI4F5QFO7SRM5BF42`
+- **Secondary Contract (FeeVault) Address**: `[Insert Deployment Address Here]`
+- **Transaction Hash (Contract Interaction)**: `[Insert Transaction Hash Here]`
+
+### 📸 Screenshots
+#### Mobile Responsive UI
+> *(Insert screenshot showing the UI beautifully wrapped on a mobile screen)*
+
+#### CI/CD Pipeline Running
+> *(Insert screenshot of GitHub Actions green checkmarks)*
+
+#### Test Output (3+ Passing Tests)
+> *(Insert screenshot of `cargo test` and `npm run test` passing successfully)*
+
+### 🎥 Demo Video
+- **Video Link**: [Insert YouTube/Loom Link Here (1-2 minutes)]
 
 ---
 Built with 🩵 for the Stellar Ecosystem.
