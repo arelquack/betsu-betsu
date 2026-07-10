@@ -13,26 +13,25 @@ describe('SplitBillForm Component', () => {
   });
 
   it('renders correctly with default state', () => {
-    render(<SplitBillForm payerPublicKey="G_TEST_PAYER" hostPublicKey="" />);
-    expect(screen.getByText('Submit Split')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Host Public Key (G...)')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Total amount in XLM')).toBeInTheDocument();
+    render(<SplitBillForm payerPublicKey="G_TEST_PAYER" />);
+    expect(screen.getByText('Pay Share Now')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('G...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('0.00')).toBeInTheDocument();
   });
 
   it('handles submission and success flow', async () => {
     (stellarUtils.splitBillTransaction as jest.Mock).mockResolvedValue('hash_123');
 
-    render(<SplitBillForm payerPublicKey="G_TEST_PAYER" hostPublicKey="" />);
+    render(<SplitBillForm payerPublicKey="G_TEST_PAYER" />);
     
-    fireEvent.change(screen.getByPlaceholderText('Host Public Key (G...)'), { target: { value: 'G_TEST_HOST' } });
-    fireEvent.change(screen.getByPlaceholderText('Total amount in XLM'), { target: { value: '10' } });
+    fireEvent.change(screen.getByPlaceholderText('G...'), { target: { value: 'G_TEST_HOST' } });
+    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '10' } });
     
-    fireEvent.click(screen.getByText('Submit Split'));
+    fireEvent.click(screen.getByText('Pay Share Now'));
 
-    expect(screen.getByText('Processing Transaction...')).toBeInTheDocument();
-
+    // Wait for the button to show loading spinner or just wait for the transaction call
     await waitFor(() => {
-      expect(stellarUtils.splitBillTransaction).toHaveBeenCalledWith('G_TEST_PAYER', 'G_TEST_HOST', 10);
+      expect(stellarUtils.splitBillTransaction).toHaveBeenCalledWith('G_TEST_PAYER', 'G_TEST_HOST', 5); // 10 XLM / 2 people = 5 XLM
       expect(screen.getByText('Transaction Successful!')).toBeInTheDocument();
     });
   });
@@ -40,12 +39,12 @@ describe('SplitBillForm Component', () => {
   it('handles error gracefully', async () => {
     (stellarUtils.splitBillTransaction as jest.Mock).mockRejectedValue(new Error('Failed to submit'));
 
-    render(<SplitBillForm payerPublicKey="G_TEST_PAYER" hostPublicKey="" />);
+    render(<SplitBillForm payerPublicKey="G_TEST_PAYER" />);
     
-    fireEvent.change(screen.getByPlaceholderText('Host Public Key (G...)'), { target: { value: 'G_TEST_HOST' } });
-    fireEvent.change(screen.getByPlaceholderText('Total amount in XLM'), { target: { value: '10' } });
+    fireEvent.change(screen.getByPlaceholderText('G...'), { target: { value: 'G_TEST_HOST' } });
+    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '10' } });
     
-    fireEvent.click(screen.getByText('Submit Split'));
+    fireEvent.click(screen.getByText('Pay Share Now'));
 
     await waitFor(() => {
       expect(screen.getByText('Failed to submit')).toBeInTheDocument();
