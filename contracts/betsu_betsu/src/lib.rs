@@ -22,10 +22,11 @@ impl SplitTracker {
         
         // Inter-contract communication: call deposit_fee on fee_vault
         use soroban_sdk::{vec, IntoVal};
+        let current_addr = env.current_contract_address();
         env.invoke_contract::<()>(
             &fee_vault_address,
             &Symbol::new(&env, "deposit_fee"),
-            vec![&env, fee.into_val(&env)],
+            vec![&env, current_addr.into_val(&env), fee.into_val(&env)],
         );
 
         // Emit an event for the frontend to listen to

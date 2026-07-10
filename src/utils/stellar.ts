@@ -112,10 +112,15 @@ export async function splitBillTransaction(
     const updatedAccount = await server.loadAccount(payerPublicKey);
     const contract = new Contract(CONTRACT_ADDRESS);
     const amountVal = Math.floor(totalXlm * 10000000);
+    
+    // In Level 3 deployment, fee vault will be a separate deployed contract.
+    // Fallback to CONTRACT_ADDRESS if not configured in .env to prevent local crash.
+    const feeVaultAddress = process.env.NEXT_PUBLIC_FEE_VAULT_ADDRESS || CONTRACT_ADDRESS;
+    
     const invokeOp = contract.call("record_split",
       nativeToScVal(payerPublicKey, { type: "address" }),
       nativeToScVal(hostPublicKey, { type: "address" }),
-      nativeToScVal(CONTRACT_ADDRESS, { type: "address" }), // Using CONTRACT_ADDRESS as mock fee_vault for now
+      nativeToScVal(feeVaultAddress, { type: "address" }),
       nativeToScVal(amountVal, { type: "i128" })
     );
 

@@ -8,8 +8,9 @@ pub struct FeeVault;
 impl FeeVault {
     /// Deposits a fee into the vault.
     /// In a real world scenario, this would transfer tokens.
-    /// Here we just track the total accumulated fees.
-    pub fn deposit_fee(env: Env, amount: i128) {
+    /// Here we just track the total accumulated fees for the caller contract.
+    pub fn deposit_fee(env: Env, contract_id: soroban_sdk::Address, amount: i128) {
+        contract_id.require_auth();
         let key = symbol_short!("fees");
         let mut total: i128 = env.storage().instance().get(&key).unwrap_or(0);
         total += amount;
