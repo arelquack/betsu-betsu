@@ -18,7 +18,7 @@ export default function Home() {
         <header className="text-center mb-12 space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium text-sm mb-4">
             <Sparkles size={16} />
-            <span>Stellar Testnet MVP - Yellow Belt</span>
+            <span>Stellar Testnet MVP - Orange Belt</span>
           </div>
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
             Betsu-Betsu (別々)
@@ -54,7 +54,7 @@ export default function Home() {
         </div>
         
         <footer className="mt-20 text-center text-sm text-slate-500 dark:text-slate-500">
-          <p>Built for the Stellar Monthly Challenge — Yellow Belt</p>
+          <p>Built for the Stellar Monthly Challenge — Orange Belt</p>
         </footer>
       </div>
     </main>
